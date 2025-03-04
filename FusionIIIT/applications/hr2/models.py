@@ -291,26 +291,79 @@ class LTCform(models.Model):
 
 
 
+# class CPDAAdvanceform(models.Model):
+#     id = models.AutoField(primary_key=True)
+#     employeeId = models.IntegerField(null=True)
+#     name = models.CharField(max_length=40,null=True)
+#     designation = models.CharField(max_length=40,null=True)
+#     pfNo = models.IntegerField(null=True)
+#     purpose = models.TextField(max_length=40, null=True)
+#     amountRequired = models.IntegerField(null=True) 
+#     advanceDueAdjustment = models.DecimalField(max_digits=10, decimal_places=2, null=True,blank=True)#NA
+   
+#     submissionDate = models.DateField(blank=True, null=True)
+   
+#     balanceAvailable = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True) # to be fetched from transaction
+#     advanceAmountPDA = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+#     amountCheckedInPDA = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    
+#     #entry checked in pda register
+#     approved = models.BooleanField(null=True) # extra
+#     approvedDate = models.DateField(auto_now_add=True, null=True) #extra
+#     created_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True, related_name='CPDA_created_by')
+#     approved_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True,blank=True, related_name='CPDA_approved_by')#change 29th oct  2024
+
+class BlockYearCPDA(models.Model):
+    blockYearId = models.AutoField(primary_key=True)
+    startDate = models.DateField()
+    endDate = models.DateField()
+
+class TransactionTableCPDA(models.Model):
+    TRANSACTION_TYPES = [
+        ('Advance', 'Advance'),
+        ('Refund', 'Refund'),
+        ('Claim', 'Claim'),
+    ]
+
+    transaction_Id = models.AutoField(primary_key=True)
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='transactions')
+    attached_pdf = models.BinaryField(null=True, blank=True)
+    remark = models.TextField(null=True, blank=True)
+    transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPES)
+    updated_balance = models.DecimalField(max_digits=10, decimal_places=2)
+    transaction_date = models.DateField(default=date.today)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+
+
 class CPDAAdvanceform(models.Model):
+    STATUS_CHOICES = [
+        ('Accepted', 'Accepted'),
+        ('Pending', 'Pending'),
+        ('Rejected', 'Rejected'),
+    ]
+
     id = models.AutoField(primary_key=True)
-    employeeId = models.IntegerField(null=True)
-    name = models.CharField(max_length=40,null=True)
-    designation = models.CharField(max_length=40,null=True)
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='cpda_advance')
+    name = models.CharField(max_length=40, null=True)
+    blockYear = models.ForeignKey(BlockYearCPDA, on_delete=models.CASCADE, related_name='cpda_advances')  # Foreign key to BlockYear
+    transaction = models.ForeignKey(TransactionTableCPDA, on_delete=models.CASCADE, related_name='cpda_advances', null=True, blank=True)
+    designation = models.CharField(max_length=40, null=True)
+    submissionDate = models.DateField(default=date.today) 
     pfNo = models.IntegerField(null=True)
-    purpose = models.TextField(max_length=40, null=True)
-    amountRequired = models.IntegerField(null=True)
+
+    amountRequired = models.IntegerField(null=True) # should be checked from balance table
     advanceDueAdjustment = models.DecimalField(max_digits=10, decimal_places=2, null=True,blank=True)
-   
-    submissionDate = models.DateField(blank=True, null=True)
-   
-    balanceAvailable = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    advanceAmountPDA = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    amountCheckedInPDA = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-   
-    approved = models.BooleanField(null=True)
-    approvedDate = models.DateField(auto_now_add=True, null=True)
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True, related_name='CPDA_created_by')
-    approved_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True,blank=True, related_name='CPDA_approved_by')#change 29th oct  2024
+    balanceAvailable = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True) # to be fetched from balance
+    
+    entryCheckedInPdaARegister=models.IntegerField(null=True)
+    amountCheckedInPdaPageNumber=models.IntegerField(null=True) 
+    approving_authority_Id=models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='cpda_advance')
+    attached_pdf = models.BinaryField(null=True, blank=True)
+
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Pending')
+    statusUpdateDate = models.DateField(default=date.today)
+    remarks=models.TextField(null=True, blank=True)
+
 
 # class LeaveForm(models.Model):
 #     id = models.AutoField(primary_key=True)
@@ -352,7 +405,6 @@ class LeaveForm(models.Model):
     name = models.CharField(max_length=40, null=True)
     designation = models.CharField(max_length=40, null=True)
     submissionDate = models.DateField(default=date.today)
-    personalfileNo = models.IntegerField(null=True)
     departmentInfo = models.CharField(max_length=40, null=True)
     
     leaveStartDate = models.DateField(blank=True, null=True)
